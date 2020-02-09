@@ -1,0 +1,68 @@
+{% set data = load_setup_py_data(setup_file='../setup.py', from_recipe_dir=True) %}
+
+package:
+  name: pynucl
+  version: {{ data.get('version') }}
+
+source:
+  git_url: https://github.com/intbio/pynucl.git
+#  patches:
+   # List any patch files here
+   # - fix.patch
+
+build:
+  number: 0 #The build number should be incremented for new builds of the same version. The number defaults to 0. The build string cannot contain "-". The string defaults to the default conda-build string plus the build number.
+
+requirements:
+  build:
+    - python
+    - setuptools
+    
+  run:
+    - python
+    - setuptools
+    - biopython 
+    - tectonic
+    - imagemagick
+    - ghostscript
+
+#For adding tests see here https://conda-forge.readthedocs.io/en/latest/testing.html
+test:
+  # Python imports
+  imports:
+    - pynucl
+  requires:
+    - pytest
+    - python
+    - biopython 
+    - tectonic
+    - imagemagick
+    - ghostscript
+  commands:
+    - pytest --pyargs pynucl
+ # source_files: #Test files that are copied from the source work directory into the temporary test directory and are needed during testing.
+ #   - test-data.txt
+ #   - some/directory
+
+  # commands:
+    # python example.py
+    # You can put test commands to be run here.  Use this to test that the
+    # entry points work.
+
+  # You can also put a file called run_test.py in the recipe that will be run
+  # at test time.
+
+  # requires:
+    # Put any additional test requirements here.  For example
+    # - nose
+
+about:
+  home: https://github.com/intbio/pynucl
+  license: GPL3.0
+  summary: 'A library for comprehensive analysis of nucleosome structures'
+  license_family: GPL
+
+
+# See
+# http://docs.continuum.io/conda/build.html for
+# more information about meta.yaml

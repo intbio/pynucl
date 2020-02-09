@@ -1,0 +1,6 @@
+include AUTHORS.rst CHANGES.rst DESCRIPTION.md LICENSE
+include pynucl/data/*
+
+global-include VERSION
+recursive-exclude docs *
+recursive-exclude examples *.pyc

@@ -1,0 +1,8 @@
+#This is a Dockerfile used to create a containter for testing used by test action.
+FROM continuumio/miniconda3
+
+
+RUN conda install -c conda-forge biopython tectonic imagemagick ghostscript pytest
+
+
+CMD [ "/bin/bash" ]

@@ -1,0 +1,9 @@
+name: 'Pytest Docker Action'
+description: 'Test python package with pytest in a docker container'
+author: 'Alexey Shaytan'
+branding:
+  icon: 'package'  
+  color: 'purple'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'

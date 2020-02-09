@@ -1,0 +1,52 @@
+name: Release_new_version_and_push_to_anaconda
+
+on: 
+  push:
+    branches:
+      - master
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+      with:
+        fetch-depth: '2'  
+    - name: Test version change
+      run: |
+        echo "##[set-output name=version_change;]$(git diff HEAD^ HEAD VERSION)"
+      id: check_ver_change
+ 
+###Testing block before release
+ 
+    - name: Test with pytest
+      if: steps.check_ver_change.outputs.version_change
+      uses: ./.github/actions/test
+
+####End testing block
+      
+    - name: Create a tag from VERSION
+      if: steps.check_ver_change.outputs.version_change
+      uses: intbio/github-tag-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        WITH_V: True
+      id: tag_add 
+    - name: Create release
+      if: steps.check_ver_change.outputs.version_change
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      with:
+        tag_name: ${{ steps.tag_add.outputs.tag }}
+        release_name: Release ${{ steps.tag_add.outputs.tag }}
+        body: |
+          New automatic release
+        draft: false
+        prerelease: false
+    - name: publish-to-conda
+      if: steps.check_ver_change.outputs.version_change
+      uses: intbio/conda-package-publish-action@master
+      env:
+        ANACONDA_USERNAME: ${{ secrets.ANACONDA_USERNAME }}
+        ANACONDA_PASSWORD: ${{ secrets.ANACONDA_PASSWORD }}   
