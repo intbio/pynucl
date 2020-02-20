@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-parsing nucleosome pdb
+
+должен возвращать выбоки для MDанализ
 
 """
 
