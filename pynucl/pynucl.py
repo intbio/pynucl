@@ -1,6 +1,17 @@
-from pytexshade import shade
-from IPython.display import Image
-import tempfile
+# -*- coding: utf-8 -*-
+"""
+This is the main module of the pynucl package.
+Provides entry points for the main class used to analyze nucleosme structures.
+
+
+Copyright 2020, Alexey Shaytan, Grigoriy Armeev, Moscow Sate Univeristy
+
+"""
+
+#This is the main enty point of the libary,
+#defines classes
+
+
 
 # class shadedmsa(object):
 #     """Class for storing a shaded image"""

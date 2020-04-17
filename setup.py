@@ -68,7 +68,7 @@ setup(
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
-    python_requires='==3.*.*',
+    python_requires='==3.*',
 
     # Default to False unless you specifically intend the package to be
     # installed as an .egg
