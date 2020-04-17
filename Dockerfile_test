@@ -1,4 +1,8 @@
 #This is a Dockerfile used to create a containter for testing used by test action.
+#Commands to create container
+# docker build -t intbio/pynucl_test -f Dockerfile_test .
+# docker push intbio/pynucl_test
+
 FROM continuumio/miniconda3
 
 
