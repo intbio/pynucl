@@ -13,7 +13,10 @@ with codecs.open(os.path.join(here, 'DESCRIPTION.md'), encoding='utf-8') as f:
 
 setup(
     name='pynucl',
-
+    # You can just specify the packages manually here if your project is
+    # simple. Or you can use find_packages().
+    packages=find_packages(exclude=['examples', 'docs', 'tests*']),
+   
     # Versions should comply with PEP440. For single-sourced versioning, see
     # http://packaging.python.org/en/latest/tutorial.html#version
     version=version,
@@ -53,9 +56,7 @@ setup(
     # What does your project relate to?
     keywords='science sequences bioinformatics',
 
-    # You can just specify the packages manually here if your project is
-    # simple. Or you can use find_packages().
-    packages=find_packages(exclude=['examples', 'docs', 'tests*']),
+    
     # Run-time package dependencies. These will be installed by pip when your
     # project is installed.
     install_requires=[

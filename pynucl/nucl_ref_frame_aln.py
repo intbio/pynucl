@@ -16,6 +16,9 @@ from .transformations import translation_matrix
 from .transformations import rotation_matrix
 from numpy import random
 import os
+import logging
+# logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s:%(message)s')
+logger = logging.getLogger(__name__)
 
 from importlib import reload 
 import DNAtools
@@ -42,20 +45,20 @@ def nucl_align(sys_ref_pdb,sys_ref_pdb_aligned,fp_ref=None,x3dna_fp_out=None,ini
                 if i==(attempts-1):
                     raise Noconv("Error: could not converge to position with DNA end z>0 in %d attemps!!!"%attempts)
                 else:
-                    print("\n==DNA start is at z<0, we want it to be at z>0, trying to reinitialize with random numbers==\n")
+                    logger.debug("\n==DNA start is at z<0, we want it to be at z>0, trying to reinitialize with random numbers==\n")
                     x0=random.rand(5)*5.0
-                    print(x0)
-                    print("Retrying...")
+                    logger.debug(x0)
+                    logger.debug("Retrying...")
             else:
                 break
         else:
             if i==(attempts-1):
                 raise Noconv("Error: did not converge after %d attemps!!!"%attempts)
             else:
-                print("\n==Did not converge, trying to reinitialize with random numbers==\n")
+                logger.debug("\n==Did not converge, trying to reinitialize with random numbers==\n")
                 x0=random.rand(5)*5.0
-                print(x0)
-                print("Retrying...")
+                logger.debug(x0)
+                logger.debug("Retrying...")
         
             
 
@@ -66,27 +69,27 @@ def nucl_align_worker(sys_ref_pdb,sys_ref_pdb_aligned,fp_ref=None,x3dna_fp_out=N
     sys_ref_pdb_aligned - file to save aligned PDB file of nucleosome
     fp_ref - pdb to get reference base pairing from.
     """
-       # find center of DNA molecule
+    # find center of DNA molecule
     ref_fr=mda.Universe(sys_ref_pdb,in_memory=True)
     sel=ref_fr.select_atoms("nucleic")
-    print("DNA chains consist of ", sel.n_residues, "residues")
-    print("DNA consists of ", sel.n_residues/2, "basepairs")
+    logger.debug("DNA chains consist of %d "%sel.n_residues + "residues")
+    logger.debug("DNA consists of %d"%(sel.n_residues/2) + "basepairs")
     cent_bp_index=int(((sel.n_residues/2)-1)/2) #zero-based, if 146, will get 72, which is ok for 1aoi, but should check for others.
-    print("Cetner bp index",cent_bp_index)
+    logger.debug("Cetner bp index %d"%cent_bp_index)
     if(fp_ref):
-        print("Using %s to extract reference base pairing"%fp_ref)
+        logger.debug("Using %s to extract reference base pairing"%fp_ref)
         ref=DNAtools.X3DNA_find_pair(fp_ref)
     else:
         if(x3dna_fp_out):
             ref=x3dna_fp_out
         else:
-            print("Calculating reference base pairing from original file")
+            logger.debug("Calculating reference base pairing from original file")
             ref=DNAtools.X3DNA_find_pair(sys_ref_pdb)
    
-    print('\n===BP identification file is %s\n'%ref)
+    logger.debug('\n===BP identification file is %s\n'%ref)
     #Check if the number of identified base pairs is equal to the real number of base pairs
     ident_bp=file_len(ref)-8
-    print("identified bp = %d"%ident_bp)
+    logger.debug("identified bp = %d"%ident_bp)
     if not (ident_bp==sel.n_residues/2):
         raise AssertionError("The number of base pairs identified by X3DNA is not equal to that expected from DNA length")
     
@@ -149,10 +152,9 @@ def nucl_align_worker(sys_ref_pdb,sys_ref_pdb_aligned,fp_ref=None,x3dna_fp_out=N
 
 
     vertices=(df[['x','y','z']].values).T
-    if(debug):
-        print("Initial bp positions:",vertices)
+    logger.debug("Initial bp positions: "+vertices.__repr__())
     #Now we need to get nucleosome axis
-    print("Intial distance var: ",calc_dist(vertices))
+    logger.debug("Intial distance var: %f"%calc_dist(vertices))
     x0 = init_x0
     
     res = minimize(fun, x0,method='Nelder-Mead',options={'maxiter':10000})
@@ -161,7 +163,7 @@ def nucl_align_worker(sys_ref_pdb,sys_ref_pdb_aligned,fp_ref=None,x3dna_fp_out=N
 
 #     print(res)
 #     print(res.x)
-    print("Distance var after minim:",fun(res.x))
+    logger.debug("Distance var after minim: %f"%fun(res.x))
 
 
  #   if(fun(res.x)>1000):
@@ -189,8 +191,8 @@ def nucl_align_worker(sys_ref_pdb,sys_ref_pdb_aligned,fp_ref=None,x3dna_fp_out=N
     #print("Center Z coord:",z)
     tmz=translation_matrix([0,0,-z])
     MAT2=np.dot(tmz,MAT1)
-    print(x)
-    print(y)
+    logger.debug('%f'%x)
+    logger.debug('%f'%y)
     rmzt=rotation_matrix(3.14159/2-np.angle(x+y*1j),[0,0,1])
     # rmzt=rotation_matrix(3.14,[0,0,1])
 
@@ -204,9 +206,9 @@ def nucl_align_worker(sys_ref_pdb,sys_ref_pdb_aligned,fp_ref=None,x3dna_fp_out=N
     sel=ref_fr.select_atoms("all")
     num_atoms=sel.positions.shape[0]
     d4_vec=np.append(sel.positions.T,np.ones((1,num_atoms)),axis=0)
-    print(d4_vec)
+    logger.debug(d4_vec.__repr__())
     d4_vec_new=np.dot(MAT3,d4_vec)
-    print(d4_vec_new)
+    logger.debug(d4_vec_new.__repr__())
     sel.positions=d4_vec_new[0:3].T
     # Set final PDB-file name 
     sel.write(sys_ref_pdb_aligned)

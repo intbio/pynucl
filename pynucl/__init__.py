@@ -1,1 +1,1 @@
-#from .pynucl import *
+from .pynucl import nuclstr,nucltrj
