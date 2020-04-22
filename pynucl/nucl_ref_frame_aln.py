@@ -87,11 +87,13 @@ def nucl_align_worker(sys_ref_pdb,sys_ref_pdb_aligned,fp_ref=None,x3dna_fp_out=N
             ref=DNAtools.X3DNA_find_pair(sys_ref_pdb)
    
     logger.debug('\n===BP identification file is %s\n'%ref)
+    logger.debug(ref.read())
+    ref.seek(0)
     #Check if the number of identified base pairs is equal to the real number of base pairs
     ident_bp=file_len(ref)-8
     logger.debug("identified bp = %d"%ident_bp)
     if not (ident_bp==sel.n_residues/2):
-        raise AssertionError("The number of base pairs identified by X3DNA is not equal to that expected from DNA length")
+        raise AssertionError("The number of base pairs identified by X3DNA is not equal to that expected from DNA length:%d,%d"%(ident_bp,sel.n_residues/2))
     
     df=DNAtools.X3DNA_analyze(sys_ref_pdb,ref)
     #We need to check that 3DNA identified all the base pairs.
