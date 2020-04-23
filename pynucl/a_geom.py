@@ -53,7 +53,7 @@ import MDAnalysis as mda
 from MDAnalysis.analysis import align
 from MDAnalysis.analysis.rms import rmsd
 from numpy.linalg import norm
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 
 
@@ -85,9 +85,9 @@ class mol_geom:
        rmsd_superpostion - superposition parameter to rmsd.
       
     """
-    def __init__(self,u,type,selections,ref=0,sel_split=False, time=(None,None,None), rmsd_superposition=False, **kwargs):
+    def __init__(self,u,geom_type,selections,ref=0,sel_split=False, time=(None,None,None), rmsd_superposition=False, **kwargs):
         self.u=u
-        self.type=type
+        self.geom_type=geom_type
         self.ref=ref
         self.sel_split=sel_split
         self.rmsd_superposition=rmsd_superposition
@@ -109,7 +109,6 @@ class mol_geom:
         if isinstance(selections,str):
             self.selections=[(selections,)]
             
-        self.sel_split=sel_split
         
 #         #########make real selections##########
         self.s=self.sels_text2obj(self.u)
@@ -126,50 +125,49 @@ class mol_geom:
             self.time[2]=1
         
         #Scalars
-        if self.type=='dist':
+        if self.geom_type=='dist':
             self.dist()
-        if self.type=='ang':
+        if self.geom_type=='ang':
             self.ang()
-        if self.type=='dih':
+        if self.geom_type=='dih':
             self.dih()
-        if self.type=='rmsd':
+        if self.geom_type=='rmsd':
             self.rmsd()
 #         if self.type=='ang_btw_hel': #TODO - see mol_geom
 #             self.ang_btw_hel()
 
 
         #Vectors
-        if self.type=='coord':
+        if self.geom_type=='coord':
             self.coord()
-#         if self.type=='helix_vector': #TODO - see mol_geom
+#         if self.geom_type=='helix_vector': #TODO - see mol_geom
 #             self.helix_vector()
 
 ##### Block to get annotated dataframes and get some stats
-#TODO stdev is not working
 
-        self.df_series=pd.DataFrame({'Time':[i for i in range(self.time[0],self.time[1],self.time[2]) for j in range(len(self.s))],'sel_num':[j for i in range(self.time[0],self.time[1],self.time[2]) for j in range(len(self.s))],self.type:self.values})
+        self.df_series=pd.DataFrame({'Time':[i for i in range(self.time[0],self.time[1],self.time[2]) for j in range(len(self.s))],'sel_num':[j for i in range(self.time[0],self.time[1],self.time[2]) for j in range(len(self.s))],self.geom_type:self.values})
         
-        self.df=self.df_series.groupby(['sel_num'])[self.type].apply(np.mean).reset_index()
-#         self.df_std=self.df_series.groupby(['sel_num'])[self.type].apply(np.std).reset_index() #TODO
+        self.df=self.df_series.groupby(['sel_num'])[self.geom_type].apply(np.mean).reset_index()
+        self.df_std=self.df_series.groupby(['sel_num'])[self.geom_type].apply(lambda x: np.std(x.to_numpy(),ddof=1)).reset_index() 
         
         
         if sel_split=='resid' or sel_split=='atom':#add info to the dataframe
-            self.df_series['segid']=ds.segids.repeat(len(range(self.time[0],self.time[1],self.time[2])))
-            self.df['segid']=ds.segids
-#             self.df_std['segid']=ds.segids
+            self.df_series['segid']=np.tile(self.ds.segids,len(range(self.time[0],self.time[1],self.time[2])))
+            self.df['segid']=self.ds.segids
+            self.df_std['segid']=self.ds.segids
 
-            self.df_series['resid']=ds.resids.repeat(len(range(self.time[0],self.time[1],self.time[2])))
-            self.df['resid']=ds.resids
-#             self.df_std['resid']=ds.resids
+            self.df_series['resid']=np.tile(self.ds.resids,len(range(self.time[0],self.time[1],self.time[2])))
+            self.df['resid']=self.ds.resids
+            self.df_std['resid']=self.ds.resids
 
         if sel_split=='atom':#add info to the dataframe
-            self.df_series['name']=ds.names.repeat(len(range(self.time[0],self.time[1],self.time[2])))
-            self.df['name']=ds.names
-#             self.df_std['name']=ds.names
+            self.df_series['name']=np.tile(self.ds.names,len(range(self.time[0],self.time[1],self.time[2])))
+            self.df['name']=self.ds.names
+            self.df_std['name']=self.ds.names
 
-            self.df_series['index']=ds.indices.repeat(len(range(self.time[0],self.time[1],self.time[2])))
-            self.df['index']=ds.indices
-#             self.df_std['index']=ds.indices    
+            self.df_series['index']=np.tile(self.ds.indices,len(range(self.time[0],self.time[1],self.time[2])))
+            self.df['index']=self.ds.indices
+            self.df_std['index']=self.ds.indices    
 
 #######
     
@@ -178,13 +176,13 @@ class mol_geom:
         if self.sel_split==False:
             for i in self.selections:
                 selobj.append([u.select_atoms(j) for j in i])
-        elif slef.sel_split=='resid': #demultiplex first sel[0][0] in a list of selections by resid
-            ds=u.select_atoms(self.selections[0][0]).residues
-            for si,ri in zip(ds.segids,ds.resids):
-                selobjs.append([u.select_atoms('segid %s and resid %s'%(si,ri))])
-        elif sel_split=='atom': #demultiplex first sel[0][0] in a list of selections by atoms
-            ds=u.select_atoms(self.selections[0][0]).atoms
-            for ai in ds.indices:
+        elif self.sel_split=='resid': #demultiplex first sel[0][0] in a list of selections by resid
+            self.ds=u.select_atoms(self.selections[0][0]).residues
+            for si,ri in zip(self.ds.segids,self.ds.resids):
+                selobj.append([u.select_atoms('segid %s and resid %s and (%s)'%(si,ri,self.selections[0][0]))])
+        elif self.sel_split=='atom': #demultiplex first sel[0][0] in a list of selections by atoms
+            self.ds=u.select_atoms(self.selections[0][0]).atoms
+            for ai in self.ds.indices:
                 selobj.append([u.select_atoms('index %d'%(ai))])
         return selobj
     
@@ -241,7 +239,7 @@ class a_geom(mol_geom):
     Class to analyze geometry patameters in nucleosome
     Get two selections (using expanded meta synataxis)
     """
-    def __init__(self,nuclstr_instance,type,selections, **kwargs):
+    def __init__(self,nuclstr_instance,geom_type,selections, **kwargs):
         if 'time' in kwargs:
             pass
         else:
@@ -258,7 +256,7 @@ class a_geom(mol_geom):
             
         sels=rec_sel_update(selections,nuclstr_instance.nucl_elements)
         
-        super().__init__(nuclstr_instance.u,type,sels, **kwargs)
+        super().__init__(nuclstr_instance.u,geom_type,sels, **kwargs)
 
 
 def dihedral(p):

@@ -159,6 +159,7 @@ class nuclstr:
             if(ref=='DNA_align'):
                 self.u.select_atoms('all').write(os.path.join(TEMP,'ref.pdb'))
             nucl_align(os.path.join(TEMP,'ref.pdb'),os.path.join(TEMP,'ref_aligned.pdb'),debug=debug)
+#             os.system('cp '+TEMP+'/ref_aligned.pdb'+' ref_aligned.pdb')
             refnuc = mda.Universe(os.path.join(TEMP,'ref_aligned.pdb'))
             alignment = align.AlignTraj(self.u, refnuc, select=self.alignment_sel, in_memory=True,start=time[0],stop=time[1],step=time[2])
             alignment.run()      

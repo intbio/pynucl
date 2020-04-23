@@ -349,6 +349,7 @@ residues_3to1 = {
     "ZCL": "F", "ZCY": "C", "ZDU": "U", "ZFB": "X", "ZGU": "G",
     "ZHP": "N", "ZTH": "T", "ZU0": "T", "ZZJ": "A",
     "DT":"T","DA":"A","DG":"G","DC":"C", #DNA
-    "U":"U","A":"A","G":"G","C":"C"} #RNA
+    "U":"U","A":"A","G":"G","C":"C",
+    "ACE":'X',"NME":'X'} #Termial plugs
 
 

@@ -151,7 +151,7 @@ def plot_line(data,nuclstr,column='value',ymin=0,dpi=300,features=None,feature_t
     #We need to get starting residue, currently for DNA chains only cifseq gets it correctly
     resid_start=nuclstr.seqs[segid]['resid_start']
     
-    logger.debug("Starting resid",resid_start)
+    logger.debug("Starting resid %d"%int(resid_start))
     
 
     overhang=nuclstr.seqs[segid]['overhangL']
