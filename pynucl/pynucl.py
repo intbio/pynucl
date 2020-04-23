@@ -160,7 +160,7 @@ class nuclstr:
                 self.u.select_atoms('all').write(os.path.join(TEMP,'ref.pdb'))
             nucl_align(os.path.join(TEMP,'ref.pdb'),os.path.join(TEMP,'ref_aligned.pdb'),debug=debug)
             refnuc = mda.Universe(os.path.join(TEMP,'ref_aligned.pdb'))
-            alignment = align.AlignTraj(self.u, refnuc, select=self.alignment_sel, in_memory=True,start=time[0],stop=-1 if time[1] is None else time[1],step=time[2])
+            alignment = align.AlignTraj(self.u, refnuc, select=self.alignment_sel, in_memory=True,start=time[0],stop=time[1],step=time[2])
             alignment.run()      
     
     
