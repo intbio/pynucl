@@ -22,8 +22,10 @@ import numpy as np
 import tempfile
 from io import StringIO
 import os
-from tqdm import tqdm
-
+from tqdm.auto import tqdm
+import uuid
+import socket
+import pkg_resources
 
 
 
@@ -36,7 +38,7 @@ class nuclstr:
     """
     Main class of the package
     """
-    def __init__(self, struct, format=None, time=(0,None,1), ref='DNA_align', fullseqs=None, debug=False):
+    def __init__(self, struct,name=None, format=None, time=(0,None,1), ref='1KX5_NRF', fullseqs=None, debug=False,skipaln=False,aln_sel=None):
         """
     struct - an MDanalysis universe (single structrue or trajectory)
         can also be: name of a structure file, with 'fromat' - specifying the format if MDanalysis cannot guess.
@@ -50,6 +52,9 @@ class nuclstr:
         can be: dict={'segid':'SEQUENCE'}, e.g. {'I':'ATGCATGCATGC...'} or {'A':'GTYHLK...'}
     time - a tuple to specify start, stop and strid along the trajectory to analyze. TODO be careful if to include stop or not(!) should specify here - currently poorly implemented.
         """
+        if not hasattr(self, 'name'):
+            self.name=name
+        
         self.time=time
         
         if(isinstance(struct,mda.Universe)):
@@ -137,51 +142,172 @@ class nuclstr:
         for k in self.components.keys():
             if(self.components[k]['entity']=='histone'):
                 self.shading_features[k]=hist_shade_features(self.seq_features[k])
+            else:
+                self.shading_features[k]=[]
         # TODO: if fullseqs='PDBID', we could grab other features from NCBI
         #    elif(self.components[k]['entity']=='protein'):
         #        self.seq_features[k]=ncbi_features()
         
         ####Step 3. Make DNA and protein mapping
-        #TODO
-        #This should create a mapping object it has two dict obj2ref_map ref2obj_map
-        #obj2ref_map={(segid,resid):(segid,resid)}
+        #TODO - do the same for DNA in sequence space if possible(!)
+        #Let's start with protein mapping of histones.
+        #This should create a mapping object it has two dict map_obj2ref_resids={(segid,resid):(segid,resid)}
+        #map_ref2obj_resids={(segid,resid):(segid,resid)}
+        #map_obj2ref_fullseq={(segid,0-based pos):(segid,0-based pos)} , map_obj2ref_fullseq
+        
+        #Let's start with mapping fullseq to 1kx5 seqs (the latter are identical to reall fullseqs of Xenopus except for H2B - we intentionally retain the sequences that are in 1kx5 so that we could easier map them to resids later)
+        map_1kx5={('H3',1):'A',('H4',1):'B',('H2A',1):'C',('H2B',1):'D',('H3',2):'E',('H4',2):'F',('H2A',2):'G',('H2B',2):'H'}
+        
+        self.map_obj2ref_fullseq={}
+        self.map_ref2obj_fullseq={}
+        self.map_obj2ref_resids={}
+        self.map_ref2obj_resids={}
+        for k,v in self.components.items():
+            if v['entity']=='histone':
+                self.map_obj2ref_fullseq[k]= map_seqs(self.seqs[k]['fullseq'],ss_templ_dict[v['type']]['seq'],k,map_1kx5[(v['type'],v['side'])])
+                self.map_obj2ref_resids[k]={(k2[0], k2[1]+self.seqs[k]['resid_start']-self.seqs[k]['overhangL']): (v2[0],v2[1]+1) for k2, v2 in self.map_obj2ref_fullseq[k].items()}
+                self.map_ref2obj_fullseq[k] = {v2: k2 for k2, v2 in self.map_obj2ref_fullseq[k].items()}
+                self.map_ref2obj_resids[k] = {v2: k2 for k2, v2 in self.map_obj2ref_resids[k].items()}
+        
     
         ###Step 4. Make elements dictionary that will be used for meta selections
         #The dict will contain MDanalysis selection strigns for features of every id
         #e.g. alpha1 - will select all alpha1 helices in all histones.
+        
+        #These are adjusted internally to switch from
         self.nucl_elements=create_elem_dict(self.components,self.seqs,self.seq_features)
-        self.alignment_sel='(%s) and name CA'%self.nucl_elements['hist_folds']
+        if(aln_sel is None):
+            self.alignment_sel=nucl_sel_expand('(alpha1 or alpha2 or alpha3) and name CA',self.nucl_elements)
+        else:
+            self.alignment_sel=nucl_sel_expand(aln_sel,self.nucl_elements)
     
         ####Step 5. Place into nucleosome reference frame
         #We have two options here align via calculating DNA superhelix or do it via proxy and align with histone folds. We have in data folder 1KX5_aligned.pdb, but we will need mapping for that.
         #So far will do alignment via DNA #TODO better to optimize it through transformation matrix.
-        with tempfile.TemporaryDirectory() as TEMP:
-            if(ref=='DNA_align'):
-                self.u.select_atoms('all').write(os.path.join(TEMP,'ref.pdb'))
-            nucl_align(os.path.join(TEMP,'ref.pdb'),os.path.join(TEMP,'ref_aligned.pdb'),debug=debug)
-#             os.system('cp '+TEMP+'/ref_aligned.pdb'+' ref_aligned.pdb')
-            refnuc = mda.Universe(os.path.join(TEMP,'ref_aligned.pdb'))
-            alignment = align.AlignTraj(self.u, refnuc, select=self.alignment_sel, in_memory=True,start=time[0],stop=time[1],step=time[2])
-            alignment.run()      
+        if(not skipaln):
+            with tempfile.TemporaryDirectory() as TEMP:
+                if(ref=='DNA_align'):
+                    self.u.select_atoms('all').write(os.path.join(TEMP,'ref.pdb'))
+                    nucl_align(os.path.join(TEMP,'ref.pdb'),os.path.join(TEMP,'ref_aligned.pdb'),debug=debug)
+                    self.alignment_sel_dict=self.alignment_sel
+                    refnuc = mda.Universe(os.path.join(TEMP,'ref_aligned.pdb'))
+    #             os.system('cp '+TEMP+'/ref_aligned.pdb'+' ref_aligned.pdb')
+                if(ref=='1KX5_NRF'): # we will align to 1KX5_NRF available in data folder
+#                     pass
+                    DATA_PATH = pkg_resources.resource_filename('pynucl', 'data/')
+                    refnuc = mda.Universe(os.path.join(DATA_PATH,'1KX5_NRF.pdb'))
+#                     align.fasta2select('sequences.aln')
+                    #we will need to provide for aligment a selection in 1KX5 and analogous selection in the provided structure
+                    #we take self.alignment_sel - from that sel we need to take atoms that are present in 1kx5, and omit that are not present
+                    self.alignment_sel_dict={}
+                    al_sel=self.u.select_atoms(self.alignment_sel)
+                    self.alignment_sel_dict['mobile']=' or '.join(['(index %d)'%a.index for a in al_sel.atoms if self.map_obj2ref_resids[a.segid].get((a.segid,a.resid),False)])
+                    self.alignment_sel_dict['reference']=' or '.join([f'(segid {self.map_obj2ref_resids[a.segid][(a.segid,a.resid)][0]} and resid {self.map_obj2ref_resids[a.segid][(a.segid,a.resid)][1]} and name {a.name})' for a in al_sel.atoms if self.map_obj2ref_resids[a.segid].get((a.segid,a.resid),False)])
+                if(ref=='first_frame'):
+                    refnuc=self.u
+                    refnuc.trajectory[0]
+                    self.alignment_sel_dict=self.alignment_sel
+                alignment = align.AlignTraj(self.u, refnuc, select=self.alignment_sel_dict, in_memory=True,start=time[0],stop=time[1],step=time[2])
+                alignment.run()      
+                
+                ############
+                #Step 6. Identification of 3D mapping and components of DNA by structrual alignment - DNA dyad, etc. Also, set base pairing here
+                ############
+                #Dyad, иметь возможность строить графики параметров ДНК относительно диады.
+                # иметь возможность select  определенные регионы ДНК относительно диады(?)
+                # словарь dna_str_sel_dict={'DNAPOS0':'segid I J resid 0', 'DNAPOS1':'segid I and resid 1 or segid J and resid -1'
+                # словарь маэпинга на 1kx5 map_ref2obj_dna3d={(segid,resid):(segid,resid)}
+                   
+                #Let's identify dyad
+                #Sine nucleosome is aligned to NRF, dyad is at x~0, y>0
+                # self.dyad_top=('I',0) #resid of dyad on top DNA strand
+                # self.dyad_bot=('J',0) #resid of dyad on bottom DNA strand
+                for k,v in self.components.items():
+                    if v['type']=='DNAtop':
+                        s=self.u.select_atoms('segid %s and name C1\''%k)
+                        score=np.abs(s.positions[:,0])-np.sign(s.positions[:,1])*100
+#                         print(score)
+                        self.dyad_top=(k,s.atoms[np.argmin(score)].resid)
+                        self.DNA_top_length=len(s)
+                        self.DNA_left_length=self.dyad_top[1]-s.resids[0]
+                        self.DNA_right_length=s.resids[-1]-self.dyad_top[1]
+                        self.DNA_top_segid=k
+                    if v['type']=='DNAbot':
+                        s=self.u.select_atoms('segid %s and name C1\''%k)
+                        score=np.abs(s.positions[:,0])-np.sign(s.positions[:,1])*100
+                        self.dyad_bot=(k,s.atoms[np.argmin(score)].resid)
+                        self.DNA_bot_length=len(s)
+                        self.DNA_bot_segid=k
+
     
+    def write(self,path):
+        """
+        Write new pdb and coordinates 
+        Currently what happens with the first frame is ambigous
+        Path should be without extension, pdb and xtc will be appended.
+        """
+        sel=self.u.select_atoms('all')
+        sel.write(path+'.pdb')
+        self.u.trajectory[0]
+        with mda.Writer(path+".xtc", sel.n_atoms) as W:
+            for ts in tqdm(self.u.trajectory[self.time[0]:self.time[1]:self.time[2]]):
+                W.write(sel)
+        self.u.trajectory[0]
     
-    
+    def vmd_lv(self,write=True,show_1KX5=False,show_ref=False):
+        """
+        VMD local view code - will generate a code to download traj to your local computer and view with VMD
+        Will also dump traj first.
+        Experimental
+        """
+        if self.name is None:
+            self.tmp_name=uuid.uuid4()
+        else:
+            self.tmp_name=self.name
+        if not os.path.exists('tmp'):
+            os.mkdir('tmp')
+        if write:
+            self.write('tmp/%s'%self.tmp_name)
+        
+        if show_1KX5 or show_ref=='1KX5':
+            ref='1KX5_NRF.pdb'
+        elif show_ref=='3LZ0':
+            ref='3LZ0_NRF.pdb'
+        else:
+            ref=f"{self.tmp_name}.pdb"
+        print("mkdir -p %s"%self.tmp_name)
+        print("cd %s"%self.tmp_name)
+        hn=socket.gethostname()
+        DATA_PATH = pkg_resources.resource_filename('pynucl', 'data/')
+        self.vmd_scr_type=''
+#         print(DATA_PATH)
+        print(f"rsync -avz {hn}:{DATA_PATH}/VMD_scripts/* .")
+        print(f"rsync -avz {hn}:{os.path.abspath(f'tmp/{self.tmp_name}*')} .")
+        print(f"vmd -e view_nucl{self.vmd_scr_type}.tcl -args {self.tmp_name}.pdb {self.tmp_name}.xtc {self.tmp_name} 0 0 1 1 1 1 1 0 0 {ref} \n\n")
+        
+        
+        
     def view(self):
         return view_nucl(self.u)
+    
+    def nucl_sel_expand(self,sel):
+        return nucl_sel_expand(sel,self.nucl_elements)
             
 class nucltrj(nuclstr):
     """
     Extends nuclstr to import trajectories
     """
-    def __init__(self, topol, trj=None, topol_as_first_frame=True, **kwargs):
+    def __init__(self, topol, trj=None, name=None,topol_as_first_frame=True, **kwargs):
+        if name is None:
+            self.name=os.path.splitext(os.path.basename(topol))[0]
         if(isinstance(topol,mda.Universe)):
-            super().__init__(topol, **kwargs)
+            super().__init__(topol, name, **kwargs)
         else:
             if(topol_as_first_frame and topol[-3:]=='pdb'):
                 opened_trj=mda.Universe(topol,topol,trj)#,in_memory=True
             else:
                 opened_trj=mda.Universe(topol,trj)#,in_memory=True
-            super().__init__(opened_trj, **kwargs)
+            super().__init__(opened_trj, name, **kwargs)
             
             
     

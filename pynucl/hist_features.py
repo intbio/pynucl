@@ -135,6 +135,8 @@ def hist_features(seq,hist_type=None):
     should return a list of secondary structure elements like ss_templ_* dicts but for a specific sequence, by aligning it to the template (specified by type or idendified by ident_hist)
     """
     hist_type,aln=hist_ident(seq)
+    if hist_type=='undef':
+        return []
     feat=[]
     for k,v in ss_templ_dict[hist_type]['elem'].items():
         start,stop=maploc(aln,v[0],v[1])
@@ -161,7 +163,11 @@ def hist_shade_features(input_features,force_feature_pos='bottom'):
 
     return features
 
-
+def hist_shf4seq(seq):
+    """
+    for a given histone sequence will return a list of features for shading with pytexshade
+    """
+    return hist_shade_features(hist_features(seq))
 
     
             # Our pytexshade utils take annotation in their own format

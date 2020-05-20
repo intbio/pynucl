@@ -85,13 +85,13 @@ class mol_geom:
        rmsd_superpostion - superposition parameter to rmsd.
       
     """
-    def __init__(self,u,geom_type,selections,ref=0,sel_split=False, time=(None,None,None), rmsd_superposition=False, **kwargs):
+    def __init__(self,u,geom_type,selections,ref=0,sel_split=False, time=(None,None,None), rmsd_superposition=False,resnumfix=False, **kwargs):
         self.u=u
         self.geom_type=geom_type
         self.ref=ref
         self.sel_split=sel_split
         self.rmsd_superposition=rmsd_superposition
-        
+        self.resnumfix=resnumfix
         
         #Let bring selections to a unified system:
         #Always a list of tuples.
@@ -140,15 +140,32 @@ class mol_geom:
         #Vectors
         if self.geom_type=='coord':
             self.coord()
+
+
+
 #         if self.geom_type=='helix_vector': #TODO - see mol_geom
 #             self.helix_vector()
 
 ##### Block to get annotated dataframes and get some stats
 
         self.df_series=pd.DataFrame({'Time':[i for i in range(self.time[0],self.time[1],self.time[2]) for j in range(len(self.s))],'sel_num':[j for i in range(self.time[0],self.time[1],self.time[2]) for j in range(len(self.s))],self.geom_type:self.values})
-        
+                
         self.df=self.df_series.groupby(['sel_num'])[self.geom_type].apply(np.mean).reset_index()
         self.df_std=self.df_series.groupby(['sel_num'])[self.geom_type].apply(lambda x: np.std(x.to_numpy(),ddof=1)).reset_index() 
+        
+        
+        if self.geom_type=='coord':
+            #we will also expand to x,y,z for compatibility
+            self.df_series['x']=[i[0] for i in self.df_series['coord']]
+            self.df_series['y']=[i[1] for i in self.df_series['coord']]
+            self.df_series['z']=[i[2] for i in self.df_series['coord']]
+            self.df['x']=[i[0] for i in self.df['coord']]
+            self.df['y']=[i[1] for i in self.df['coord']]
+            self.df['z']=[i[2] for i in self.df['coord']]
+            self.df_std['x']=[i[0] for i in self.df_std['coord']]
+            self.df_std['y']=[i[1] for i in self.df_std['coord']]
+            self.df_std['z']=[i[2] for i in self.df_std['coord']]
+        
         
         
         if sel_split=='resid' or sel_split=='atom':#add info to the dataframe
@@ -179,7 +196,12 @@ class mol_geom:
         elif self.sel_split=='resid': #demultiplex first sel[0][0] in a list of selections by resid
             self.ds=u.select_atoms(self.selections[0][0]).residues
             for si,ri in zip(self.ds.segids,self.ds.resids):
-                selobj.append([u.select_atoms('segid %s and resid %s and (%s)'%(si,ri,self.selections[0][0]))])
+                if self.resnumfix:
+                    selobj.append([u.select_atoms('segid %s and resnum %s and (%s)'%(si,ri,self.selections[0][0]))])
+                else:
+                    selobj.append([u.select_atoms('segid %s and resid %s and (%s)'%(si,ri,self.selections[0][0]))])
+
+
         elif self.sel_split=='atom': #demultiplex first sel[0][0] in a list of selections by atoms
             self.ds=u.select_atoms(self.selections[0][0]).atoms
             for ai in self.ds.indices:
@@ -218,7 +240,7 @@ class mol_geom:
                 snapvals.append(np.degrees(np.arctan2(sinang, cosang)))
             self.values.extend(snapvals)
     
-    
+    #TODO that one shoul be near instant with u.trajectory.timeseries
     def coord(self):
         self.values=[] #first cycle is over time, second  is multipex
         for ts in tqdm(self.u.trajectory[self.time[0]:self.time[1]:self.time[2]]):

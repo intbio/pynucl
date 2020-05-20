@@ -8,9 +8,47 @@ from Bio.Seq import Seq
 import requests
 import logging
 
+from Bio.Alphabet import IUPAC
+from Bio.SeqFeature import SeqFeature, FeatureLocation
+from Bio import Align
+from Bio.Align import substitution_matrices
+
+
+
+
 logger = logging.getLogger(__name__)
 
 seqrec_cache={}
+
+def map_seqs(obj,ref,segid_obj=None,segid_ref=None,matrix='BLOSUM62'):
+    """
+    given two sequences obj and ref 
+    return a mapping dict map_obj2ref_fullseq={(segid,0-based pos):(segid,0-based pos)}
+    """
+    aligner = Align.PairwiseAligner()
+    aligner.substitution_matrix = substitution_matrices.load(matrix)
+    
+    best_score=0
+    best_aln='no'
+    i=0
+    for a in aligner.align(str(obj),str(ref)):
+        if(a.score>best_score):
+            best_score=a.score
+            best_aln=a
+        i=i+1
+        if i>100: # we analyze only first 100 alignments
+            break
+    
+    t2q={}
+    
+    for i,j in zip(best_aln.aligned[0],best_aln.aligned[1]):
+        for x,y in zip(range(*i),range(*j)):
+            t2q[x]=y
+    if segid_obj is None:
+        return t2q
+    else:
+        return {(segid_obj,k):(segid_ref,v) for k,v in t2q.items()}
+
 
 def get_overhangL(seqrec,strseq):
     """

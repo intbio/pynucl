@@ -5,6 +5,7 @@ __pycache__/
 debug/
 .DS_Store
 tmp/
+cache/
 # C extensions
 *.so
 debug/

@@ -37,7 +37,7 @@ def create_elem_dict(components,seqs,seq_features):
     for k,v in components.items():
         ss_seq_dict[k]={}
         for i in seq_features.get(k,[]):
-            ss_seq_dict[k][i.id]=[i.location.start,i.location.end-1]
+            ss_seq_dict[k][i.id]=[seqs[k]['resid_start']-seqs[k]['overhangL']+i.location.start,seqs[k]['resid_start']-seqs[k]['overhangL']+i.location.end-1]
         #ss_seq_dict[k]=ss4seq(seqs[k]['strseq'])
     
     
@@ -56,13 +56,13 @@ def create_elem_dict(components,seqs,seq_features):
     for k,v in components.items():
         if v['entity']=='histone':
             for k2,v2 in ss_seq_dict[k].items():
-                nucl_elements[k2]=nucl_elements[k2]+'or (segid %s and resid %d:%d)'%(k,v2[0]+1,v2[1]+1)
+                nucl_elements[k2]=nucl_elements[k2]+' or (segid %s and resid %d:%d)'%(k,v2[0],v2[1])
 
     #Step 4. Populate with groups (super selections)
     for k,v in elem_groups.items():
         nucl_elements[k]='(not all)'
         for i in v:
-            nucl_elements[k]=nucl_elements[k]+'or (%s)'%nucl_elements[i]
+            nucl_elements[k]=nucl_elements[k]+' or (%s)'%nucl_elements[i]
                 
                 
     #as a precausion wrap everything in parenthesis

@@ -11,9 +11,15 @@ from plotnine import ggplot,geom_rect, geom_point, aes, stat_smooth,geom_bar, xl
 from plotnine import facet_wrap, theme, scale_y_continuous,scale_x_continuous, theme_bw,theme_classic, theme_dark, theme_light, theme_matplotlib, theme_minimal, theme_seaborn, theme_void, geom_rect,xlab,ylab,geom_path
 from plotnine.labels import ggtitle
 
+import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
+import numpy as np
+import pandas as pd
+
+
 #import matplotlib.pyplot as plt
 
-def plot_coord(inpdata,plane='xy',column='coord'):
+def plot_coord_gg(inpdata,plane='xy',column='coord'):
     """
     Make plots of a coord data
     """
@@ -26,22 +32,89 @@ def plot_coord(inpdata,plane='xy',column='coord'):
 
     plot=(ggplot(data=d,mapping=aes(x=plane[0], y=plane[1]))
         + geom_point(size=0.1)+xlab('Coordinate X')+ylab('Coordinate Y'))
-#     for i in d.segid.unique():
-#         plot=plot+geom_path(data=d[])
     g=d.groupby(['segid','Time'])
     for i in g.groups:
         plot=plot+geom_path(data=g.get_group(i))
 
-#         + scale_x_continuous(limits=(0.5,sl+0.5+rof),expand=(0,0.2),name='',breaks=[])
-       # + scale_y_continuous(breaks=[0,0.5,1.0])
     
     return plot
 
 
-# import matplotlib.pyplot as plt
-# plt.figure(figsize=(5,5))
+def plot_coord(inpdata,plane='xy',column='coord',ref=0,figsize=(5,5),ax=None,color='blue',color_ref='red'):
+    """
+    Make plots of a coord data
+    """
+    c={'x':0,'y':1,'z':2}
+    if ax is None:
+        fig,ax=plt.subplots(figsize=figsize)
+    if 'Time' in inpdata.columns:
+        g=inpdata.groupby(['segid','Time'])
+    else:
+        g=inpdata.groupby(['segid'])        
+    for i in g.groups:
+        ax.plot(g.get_group(i)['coord'].apply(lambda x: x[c[plane[0]]]).values,g.get_group(i)['coord'].apply(lambda x: x[c[plane[1]]]).values,color=color)
+    
+    if isinstance(ref,int):
+        r=inpdata[inpdata['Time']==ref]
+    else:
+        r=ref
+    if r is not None:
+        g=r.groupby(['segid'])
+        for i in g.groups:
+            ax.plot(g.get_group(i)['coord'].apply(lambda x: x[c[plane[0]]]).values,g.get_group(i)['coord'].apply(lambda x: x[c[plane[1]]]).values,color=color_ref)
+     
+    v1=inpdata['coord'].apply(lambda x: x[c[plane[0]]]).values
+    v2=inpdata['coord'].apply(lambda x: x[c[plane[1]]]).values
+    sz=np.max([np.max(v1)-np.min(v1),np.max(v2)-np.min(v2)])
+    ax.set_xlim((np.max(v1)+np.min(v1))/2-sz/2*1.05,(np.max(v1)+np.min(v1))/2+sz/2*1.05)
+    ax.set_ylim((np.max(v2)+np.min(v2))/2-sz/2*1.05,(np.max(v2)+np.min(v2))/2+sz/2*1.05)
+    ax.set_xlabel('Coordinate %s, A'%plane.upper()[0])
+    ax.set_ylabel('Coordinate %s, A'%plane.upper()[1])
 
-# plt.plot(pos[:,0],pos[:,1],label='Dynamics',color='deepskyblue')
-# plt.show()
+    return ax
+    
+#     plt.show()
 
+def plot_coord_fast(inpdata,plane='xy',column='coord',ref=0,figsize=(5,5),ax=None,color='blue',color_ref='red'):
+    """
+    Make plots of a coord data, faster way using line collections and vectorized pandas-numpy operations
+    """
+    c={'x':0,'y':1,'z':2}
+    if ax is None:
+        fig,ax=plt.subplots(figsize=figsize)
+    if 'Time' in inpdata.columns:
+        g=inpdata.groupby(['segid','Time'])
+        array=np.array(list(g.apply(pd.DataFrame.to_numpy)))
+        lines=np.array(array[:,:,2].tolist())[:,:,[c[plane[0]],c[plane[1]]]]
+        ln_coll=LineCollection(lines,color=color)
+        ax.add_collection(ln_coll)
+    else:
+        g=inpdata.groupby(['segid'])
+        for i in g.groups:
+            coords=np.stack(g.get_group(i)['coord'].values,axis=0).T
+            ax.plot(coords[c[plane[0]]],coords[c[plane[1]]],color=color)
+
+    #for i in g.groups:
+    #    coords=np.stack(g.get_group(i)['coord'].values,axis=0).T
+    #    ax.plot(coords[c[plane[0]]],coords[c[plane[1]]],color=color)
+    
+    if isinstance(ref,int):
+        r=inpdata[inpdata['Time']==ref]
+    else:
+        r=ref
+    if r is not None:
+        g=r.groupby(['segid'])
+        for i in g.groups:
+            coords=np.stack(g.get_group(i)['coord'].values,axis=0).T
+            ax.plot(coords[c[plane[0]]],coords[c[plane[1]]],color=color_ref)
+     
+    v1=inpdata['coord'].apply(lambda x: x[c[plane[0]]]).values
+    v2=inpdata['coord'].apply(lambda x: x[c[plane[1]]]).values
+    sz=np.max([np.max(v1)-np.min(v1),np.max(v2)-np.min(v2)])
+    ax.set_xlim((np.max(v1)+np.min(v1))/2-sz/2*1.05,(np.max(v1)+np.min(v1))/2+sz/2*1.05)
+    ax.set_ylim((np.max(v2)+np.min(v2))/2-sz/2*1.05,(np.max(v2)+np.min(v2))/2+sz/2*1.05)
+    ax.set_xlabel('Coordinate %s, A'%plane.upper()[0])
+    ax.set_ylabel('Coordinate %s, A'%plane.upper()[1])
+
+    return ax
 

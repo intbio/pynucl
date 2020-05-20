@@ -13,8 +13,10 @@ class a_contacts(struct2cont):
     def __init__(self,nuclstr_instance,selA,selB=None, **kwargs):
         if 'time' in kwargs:
             tm=kwargs['time']
+            newkwargs=kwargs
+            del newkwargs['time']
         else:
             tm=nuclstr_instance.time
-        super().__init__(nuclstr_instance.u,nucl_sel_expand(selA,nuclstr_instance.nucl_elements),selB=nucl_sel_expand(selB,nuclstr_instance.nucl_elements), time=tm, **kwargs)
+        super().__init__(nuclstr_instance.u,nucl_sel_expand(selA,nuclstr_instance.nucl_elements),selB=nucl_sel_expand(selB,nuclstr_instance.nucl_elements), time=tm, **newkwargs)
         
         
