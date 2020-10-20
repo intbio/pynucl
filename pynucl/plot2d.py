@@ -32,7 +32,7 @@ def plot_coord_gg(inpdata,plane='xy',column='coord'):
 
     plot=(ggplot(data=d,mapping=aes(x=plane[0], y=plane[1]))
         + geom_point(size=0.1)+xlab('Coordinate X')+ylab('Coordinate Y'))
-    g=d.groupby(['segid','Time'])
+    g=d.groupby(['segid','Frame'])
     for i in g.groups:
         plot=plot+geom_path(data=g.get_group(i))
 
@@ -47,15 +47,15 @@ def plot_coord(inpdata,plane='xy',column='coord',ref=0,figsize=(5,5),ax=None,col
     c={'x':0,'y':1,'z':2}
     if ax is None:
         fig,ax=plt.subplots(figsize=figsize)
-    if 'Time' in inpdata.columns:
-        g=inpdata.groupby(['segid','Time'])
+    if 'Frame' in inpdata.columns:
+        g=inpdata.groupby(['segid','Frame'])
     else:
         g=inpdata.groupby(['segid'])        
     for i in g.groups:
         ax.plot(g.get_group(i)['coord'].apply(lambda x: x[c[plane[0]]]).values,g.get_group(i)['coord'].apply(lambda x: x[c[plane[1]]]).values,color=color)
     
     if isinstance(ref,int):
-        r=inpdata[inpdata['Time']==ref]
+        r=inpdata[inpdata['Frame']==ref]
     else:
         r=ref
     if r is not None:
@@ -78,12 +78,13 @@ def plot_coord(inpdata,plane='xy',column='coord',ref=0,figsize=(5,5),ax=None,col
 def plot_coord_fast(inpdata,plane='xy',column='coord',ref=0,figsize=(5,5),ax=None,color='blue',color_ref='red'):
     """
     Make plots of a coord data, faster way using line collections and vectorized pandas-numpy operations
+    TODO: add optional animation output http://louistiao.me/posts/notebooks/save-matplotlib-animations-as-gifs/
     """
     c={'x':0,'y':1,'z':2}
     if ax is None:
         fig,ax=plt.subplots(figsize=figsize)
-    if 'Time' in inpdata.columns:
-        g=inpdata.groupby(['segid','Time'])
+    if 'Frame' in inpdata.columns:
+        g=inpdata.groupby(['segid','Frame'])
         array=np.array(list(g.apply(pd.DataFrame.to_numpy)))
         lines=np.array(array[:,:,2].tolist())[:,:,[c[plane[0]],c[plane[1]]]]
         ln_coll=LineCollection(lines,color=color)
@@ -99,7 +100,7 @@ def plot_coord_fast(inpdata,plane='xy',column='coord',ref=0,figsize=(5,5),ax=Non
     #    ax.plot(coords[c[plane[0]]],coords[c[plane[1]]],color=color)
     
     if isinstance(ref,int):
-        r=inpdata[inpdata['Time']==ref]
+        r=inpdata[inpdata['Frame']==ref]
     else:
         r=ref
     if r is not None:

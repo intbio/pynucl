@@ -21,7 +21,9 @@
 # In Suto Luger 2000 H2A.Z paper  81-119
 # Shaytan et al. JMB 2016 Fig.2. 80-118
 # Original HistoneDB 81-119
-# In the latest update of HistoneDB and here we use Luger 1997 convention 80-119
+# In the latest update of HistoneDB we thought to use Luger 1997 convention 80-119, but now we will use 80-118
+# However, in MD we see that K119 is too flexible, so it makes sense to define docking domain as 80-118,
+# as we do here
 
 #H2A.Z mapping should be provided separately, manual structural alignment used to precisely place the loop elements.
 
@@ -55,12 +57,15 @@ templ_H2B = Seq("AKSAPAPKKGSKKAVTKTQKKDGKKRRKTRKESYAIYVYKVLKQVHPDTGISSKAMSIMNSFV
 #'element_name':[start,stop], start stop - are both in the range
 
 
-ss_templ_H3={'core':[35,134],'alphaN':[43,56],'alpha1':[62,76],'alpha2':[84,113],'alpha3':[119,130],'loopL1':[78,83],'loopL2':[114,118],'beta1':[82,83],'beta2':[117,118],'mgarg1':[62,62],'mgarg2':[82,82],'mgarg3':[48,48]}
-ss_templ_H4={'core':[24,101],'alpha1ext':[23,28],'alpha1':[29,40],'alpha2':[48,75],'alpha3':[81,92],'loopL1':[41,47],'loopL2':[76,81],'beta1':[44,45],'beta2':[79,80],'beta3':[95,97],'mgarg1':[44,44]}
-ss_templ_H2A={'core':[15,117],'alpha1ext':[15,21],'alpha1':[25,36],'alpha2':[45,72],'alpha3':[78,88],'alpha3ext':[89,96],'loopL1':[37,44],'loopL2':[73,77],'beta1':[41,42],'beta2':[76,77],'beta3':[99,101],'docking domain':[79,118],'mgarg1':[41,41],'mgarg2':[76,76]}
-ss_templ_H2B={'core':[25,121],'alpha1':[33,45],'alpha2':[51,80],'alpha3':[86,98],'alphaC':[99,119],'loopL1':[46,50],'loopL2':[81,85],'beta1':[49,50],'beta2':[84,85],'mgarg1':[29,29]}
+#core - are parts that we modelled as 1kx5_ntm
+#inner_core - tails truncated further to alphaN or alpha1 tail boders.
 
-ss_templ_H2AZ={'alpha1ext':[17,23],'alpha1':[27,38],'alpha2':[48,75],'alpha3':[81,91],'alpha3ext':[92,99],'loopL1':[39,47],'loopL2':[76,80],'beta1':[44,45],'beta2':[79,80],'beta3':[101,103],'docking domain':[82,120],'mgarg1':[44,44],'mgarg2':[79,79]}
+ss_templ_H3={'inner_core':[43,134],'core':[38,134],'alphaN':[43,56],'alpha1':[62,76],'alpha2':[84,113],'alpha3':[119,130],'loopL1':[78,83],'loopL2':[114,118],'beta1':[82,83],'beta2':[117,118],'mgarg1':[62,62],'mgarg2':[82,82],'mgarg3':[48,48]}
+ss_templ_H4={'inner_core':[23,101],'core':[24,101],'alpha1ext':[23,28],'alpha1':[29,40],'alpha2':[48,75],'alpha3':[81,92],'loopL1':[41,47],'loopL2':[76,81],'beta1':[44,45],'beta2':[79,80],'beta3':[95,97],'mgarg1':[44,44]}
+ss_templ_H2A={'inner_core':[15,117],'core':[15,117],'alpha1ext':[15,21],'alpha1':[25,36],'alpha2':[45,72],'alpha3':[78,88],'alpha3ext':[89,96],'loopL1':[37,44],'loopL2':[73,77],'beta1':[41,42],'beta2':[76,77],'beta3':[99,101],'docking_domain':[79,117],'mgarg1':[41,41],'mgarg2':[76,76]}
+ss_templ_H2B={'inner_core':[33,121],'core':[25,121],'alpha1':[33,45],'alpha2':[51,80],'alpha3':[86,98],'alphaC':[99,119],'loopL1':[46,50],'loopL2':[81,85],'beta1':[49,50],'beta2':[84,85],'mgarg1':[29,29]}
+
+ss_templ_H2AZ={'alpha1ext':[17,23],'alpha1':[27,38],'alpha2':[48,75],'alpha3':[81,91],'alpha3ext':[92,99],'loopL1':[39,47],'loopL2':[76,80],'beta1':[44,45],'beta2':[79,80],'beta3':[101,103],'docking_domain':[82,119],'mgarg1':[44,44],'mgarg2':[79,79]}
 
 ftypes_dict={'alpha1ext':'helix','alphaN':'helix','alpha1':'helix','alpha2':'helix','alpha3':'helix','beta1':'sheet','beta2':'sheet','beta3':'sheet','loopL2':'loop','loopL1':'loop','mgarg1':'frameblock','mgarg2':'frameblock','mgarg3':'frameblock'}
 ftext_dict={'alpha1':'$\\alpha 1$','alpha2':'$\\alpha 2$','alpha3':'$\\alpha 3$','alphaN':'$\\alpha N$','beta1':'$\\beta 1$','beta2':'$\\beta 2$'}
@@ -126,8 +131,10 @@ def maploc(aln,tstart,tstop):
         else:
             tstop=tstop-1
 
-    
-    return qstart,qstop
+    if qstart<=qstop:
+        return qstart,qstop
+    else:
+        return -1,-1
     
 
 def hist_features(seq,hist_type=None):

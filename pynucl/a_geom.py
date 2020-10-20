@@ -148,7 +148,7 @@ class mol_geom:
 
 ##### Block to get annotated dataframes and get some stats
 
-        self.df_series=pd.DataFrame({'Time':[i for i in range(self.time[0],self.time[1],self.time[2]) for j in range(len(self.s))],'sel_num':[j for i in range(self.time[0],self.time[1],self.time[2]) for j in range(len(self.s))],self.geom_type:self.values})
+        self.df_series=pd.DataFrame({'Frame':[i for i in range(self.time[0],self.time[1],self.time[2]) for j in range(len(self.s))],'sel_num':[j for i in range(self.time[0],self.time[1],self.time[2]) for j in range(len(self.s))],self.geom_type:self.values})
                 
         self.df=self.df_series.groupby(['sel_num'])[self.geom_type].apply(np.mean).reset_index()
         self.df_std=self.df_series.groupby(['sel_num'])[self.geom_type].apply(lambda x: np.std(x.to_numpy(),ddof=1)).reset_index() 
@@ -258,7 +258,7 @@ class mol_geom:
         
 class a_geom(mol_geom):
     """
-    Class to analyze geometry patameters in nucleosome
+    Class to analyze geometry parameters in nucleosome
     Get two selections (using expanded meta synataxis)
     """
     def __init__(self,nuclstr_instance,geom_type,selections, **kwargs):

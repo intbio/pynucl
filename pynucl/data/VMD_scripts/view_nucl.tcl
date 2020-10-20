@@ -1,7 +1,7 @@
 #to make movie run vmd -e view_nucl.tcl -args big_data/h3-h4_xray.pdb big_data/h3-h4.xtc title 1 1 1 1 1 1 1 0 0 ref.pdb
 #first number - smoothing window \
 #second number - 0/1 do movie of preview
-#third number - 0/1 render with tachyon or not (tachyon allows commandline rendering)
+#third number - 0/1 render with tachyon or not (tachyon allows commandline rendering), 2 - is Optix rendering
 #forth number -0/1 display time or not
 #fifth number -0/1 update or not ssecondary structure during movie
 #sixth number movie step in frames
@@ -61,7 +61,8 @@ mol modstyle 0 0 NewCartoon 0.840000 20.000000 2.630000 0
 ###
 
 mol load pdb $init
-mol addfile $trj waitfor all
+mol addfile $trj first 1 waitfor all 
+# first 1 assumses that the first frame in trj is identical to pdb - this is the usual case with pymoling
 
 mol ssrecalc top
 
@@ -166,7 +167,7 @@ set ai [atomselect top "chain I and name O5'"]
 set na [lindex [$ai get resid] 0]
 set selchI [format "chain I and name O5' and resid \"%s\"" $na]
 
-mol representation VDW 3 12
+mol representation VDW 2.0 12
 mol color ColorID 11
 mol selection $selchI
 mol material AOShiny
@@ -292,13 +293,13 @@ draw color 6
 draw text " $txtx [expr $txty-($txtlncount*$txtstep)] 0 " "DNA" size 1.5 thickness 3
 incr txtlncount 1
 
-draw color 3
-draw text " $txtx [expr $txty-($txtlncount*$txtstep)] 0 " "AT pairs" size 1.5 thickness 3
-incr txtlncount 1
+#draw color 3
+#draw text " $txtx [expr $txty-($txtlncount*$txtstep)] 0 " "AT pairs" size 1.5 thickness 3
+#incr txtlncount 1
 
-draw color 6
-draw text " $txtx [expr $txty-($txtlncount*$txtstep)] 0 " "GC pairs" size 1.5 thickness 3
-incr txtlncount 1
+#draw color 6
+#draw text " $txtx [expr $txty-($txtlncount*$txtstep)] 0 " "GC pairs" size 1.5 thickness 3
+#incr txtlncount 1
 
 draw color 11
 draw text " $txtx [expr $txty-($txtlncount*$txtstep)] 0 " "O5'DNA chain I" size 1 thickness 3

@@ -107,15 +107,24 @@ def seqrec_from_pdb(pdbid,segid):
     if not pdbid in seqrec_cache:
         logger.debug('Updating cache for %s'%pdbid)
         seqrec_cache[pdbid]={}
-        h=io.StringIO(requests.get('http://www.rcsb.org/fasta/entry/%s'%pdbid.upper()).content.decode("utf-8") )
+   
+#         h=io.StringIO(requests.get('http://www.rcsb.org/fasta/entry/%s'%pdbid.upper()).content.decode("utf-8") )
+     
+        h=io.StringIO(requests.get('https://www.ebi.ac.uk/pdbe/entry/pdb/%s/fasta'%pdbid.lower()).content.decode("utf-8") )
+
+
         for record in SeqIO.parse(h,'fasta'):
-#             print(record)
             r=record
-            #print(record.description)
-            chains=record.description.split('|')[1].split()[1]
-            for ch in chains.split(','):
-#                 r.id='PDB:1KX5:%s'%ch
+        
+        #RCSB version
+         #   chains=record.description.split('|')[1]
+          #  for ch in chains.split():
+           #      seqrec_cache[pdbid][ch]=r.seq
+        #PDBe version
+            chains=record.description.split('|')[2]
+            for ch in chains.split():
                 seqrec_cache[pdbid][ch]=r.seq
+                
     return(seqrec_cache[pdbid][segid])
 
 

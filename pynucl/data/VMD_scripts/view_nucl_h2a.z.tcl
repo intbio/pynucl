@@ -58,7 +58,8 @@ mol modstyle 0 0 NewCartoon 0.840000 20.000000 2.630000 0
 ###
 
 mol load pdb $init
-mol addfile $trj waitfor all
+mol addfile $trj first 1 waitfor all 
+# first 1 assumses that the first frame in trj is identical to pdb - this is the usual case with pymoling
 
 mol ssrecalc top
 
