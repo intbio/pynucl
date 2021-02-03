@@ -152,7 +152,7 @@ def hist_features(seq,hist_type=None):
     return feat
     
 
-def hist_shade_features(input_features,force_feature_pos='bottom'):
+def hist_shade_features(input_features,feature_types=['loop','helix','sheet','frameblock'],force_feature_pos='bottom'):
     """
     Generate a fetaures list for pytexshade for histones from list of biopython SeqFeature objects
     """
@@ -161,20 +161,21 @@ def hist_shade_features(input_features,force_feature_pos='bottom'):
     #create a feature overlap string
     features=[]
     for f in input_features:
-        pos=force_feature_pos if force_feature_pos else 'top'
-        if(f.id=='core'):
-            pos=pos[0]+pos[0]+pos
-        if(f.type=='loop'):
-            pos=pos[0]+pos
-        features.append({'style':fc.get(f.type,f.type),'seqref':'1','sel':[int(f.location.start),f.location.end-1],'position':pos,'text':ftext_dict.get(f.id,f.id)})
+        if f.type in feature_types:
+            pos=force_feature_pos if force_feature_pos else 'top'
+            if(f.id=='core'):
+                pos=pos[0]+pos[0]+pos
+            if(f.type=='loop'):
+                pos=pos[0]+pos
+            features.append({'style':fc.get(f.type,f.type),'seqref':'1','sel':[int(f.location.start),f.location.end-1],'position':pos,'text':ftext_dict.get(f.id,f.id)})
 
     return features
 
-def hist_shf4seq(seq):
+def hist_shf4seq(seq,feature_types=['loop','helix','sheet','frameblock']):
     """
     for a given histone sequence will return a list of features for shading with pytexshade
     """
-    return hist_shade_features(hist_features(seq))
+    return hist_shade_features(hist_features(seq),feature_types=feature_types)
 
     
             # Our pytexshade utils take annotation in their own format

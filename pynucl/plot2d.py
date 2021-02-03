@@ -75,7 +75,7 @@ def plot_coord(inpdata,plane='xy',column='coord',ref=0,figsize=(5,5),ax=None,col
     
 #     plt.show()
 
-def plot_coord_fast(inpdata,plane='xy',column='coord',ref=0,figsize=(5,5),ax=None,color='blue',color_ref='red'):
+def plot_coord_fast(inpdata,plane='xy',column='coord',ref=0,figsize=(5,5),ax=None,color='blue',color_ref='red',alpha=1.0):
     """
     Make plots of a coord data, faster way using line collections and vectorized pandas-numpy operations
     TODO: add optional animation output http://louistiao.me/posts/notebooks/save-matplotlib-animations-as-gifs/
@@ -85,15 +85,15 @@ def plot_coord_fast(inpdata,plane='xy',column='coord',ref=0,figsize=(5,5),ax=Non
         fig,ax=plt.subplots(figsize=figsize)
     if 'Frame' in inpdata.columns:
         g=inpdata.groupby(['segid','Frame'])
-        array=np.array(list(g.apply(pd.DataFrame.to_numpy)))
-        lines=np.array(array[:,:,2].tolist())[:,:,[c[plane[0]],c[plane[1]]]]
-        ln_coll=LineCollection(lines,color=color)
+        array=np.array(list(g['coord'].apply(pd.DataFrame.to_numpy).apply(np.vstack).to_numpy()))
+        lines=array[:,:,[c[plane[0]],c[plane[1]]]]
+        ln_coll=LineCollection(lines,color=color,alpha=alpha)
         ax.add_collection(ln_coll)
     else:
         g=inpdata.groupby(['segid'])
         for i in g.groups:
             coords=np.stack(g.get_group(i)['coord'].values,axis=0).T
-            ax.plot(coords[c[plane[0]]],coords[c[plane[1]]],color=color)
+            ax.plot(coords[c[plane[0]]],coords[c[plane[1]]],color=color,alpha=alpha)
 
     #for i in g.groups:
     #    coords=np.stack(g.get_group(i)['coord'].values,axis=0).T
