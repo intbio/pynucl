@@ -65,7 +65,7 @@ ss_templ_H4={'inner_core':[23,101],'core':[24,101],'alpha1ext':[23,28],'alpha1':
 ss_templ_H2A={'inner_core':[15,117],'core':[15,117],'alpha1ext':[15,21],'alpha1':[25,36],'alpha2':[45,72],'alpha3':[78,88],'alpha3ext':[89,96],'loopL1':[37,44],'loopL2':[73,77],'beta1':[41,42],'beta2':[76,77],'beta3':[99,101],'docking_domain':[79,117],'mgarg1':[41,41],'mgarg2':[76,76]}
 ss_templ_H2B={'inner_core':[33,121],'core':[25,121],'alpha1':[33,45],'alpha2':[51,80],'alpha3':[86,98],'alphaC':[99,119],'loopL1':[46,50],'loopL2':[81,85],'beta1':[49,50],'beta2':[84,85],'mgarg1':[29,29]}
 
-ss_templ_H2AZ={'alpha1ext':[17,23],'alpha1':[27,38],'alpha2':[48,75],'alpha3':[81,91],'alpha3ext':[92,99],'loopL1':[39,47],'loopL2':[76,80],'beta1':[44,45],'beta2':[79,80],'beta3':[101,103],'docking_domain':[82,119],'mgarg1':[44,44],'mgarg2':[79,79]}
+ss_templ_H2AZ={'inner_core':[17,119],'core':[17,119],'alpha1ext':[17,23],'alpha1':[27,38],'alpha2':[48,75],'alpha3':[81,91],'alpha3ext':[92,99],'loopL1':[39,47],'loopL2':[76,80],'beta1':[44,45],'beta2':[79,80],'beta3':[101,103],'docking_domain':[82,119],'mgarg1':[44,44],'mgarg2':[79,79]}
 
 ftypes_dict={'alpha1ext':'helix','alphaN':'helix','alpha1':'helix','alpha2':'helix','alpha3':'helix','beta1':'sheet','beta2':'sheet','beta3':'sheet','loopL2':'loop','loopL1':'loop','mgarg1':'frameblock','mgarg2':'frameblock','mgarg3':'frameblock'}
 ftext_dict={'alpha1':'$\\alpha 1$','alpha2':'$\\alpha 2$','alpha3':'$\\alpha 3$','alphaN':'$\\alpha N$','beta1':'$\\beta 1$','beta2':'$\\beta 2$'}
