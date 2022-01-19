@@ -149,13 +149,26 @@ class a_DNA:
         self.df_series['Dp_2']=self.df_series['Dp_2'].astype(float)        
         
         
-        self.do_stats()
+        try:
+            self.do_stats()
+        except:
+            logger.warning('statistics failed!')
         
     def do_stats(self):
-        self.df=self.df_series.groupby(['BPnum','BPnum_dyad','segid','resid'])['x','y','z','Shear','Stretch','Stagger','Buckle','Prop-Tw','Opening','Shift', 'Slide', 'Rise', 'Tilt', 'Roll', 'Twist','Pairing', 'chi_1', 'alpha_1', 'beta_1', 'gamma_1', 'delta_1','epsilon_1', 'zeta_1', 'e-z_1', 'chi_2', 'alpha_2','beta_2', 'gamma_2', 'delta_2', 'epsilon_2', 'zeta_2', 'e-z_2',  'v0_1', 'v1_1', 'v2_1', 'v3_1', 'v4_1', 'tm_1', 'P_1', 'ssZp_1', 'Dp_1', 'v0_2', 'v1_2', 'v2_2', 'v3_2', 'v4_2','tm_2', 'P_2', 'ssZp_2', 'Dp_2'].apply(np.mean).reset_index()
-        self.df_std=self.df_series.groupby(['BPnum','BPnum_dyad','segid','resid'])['x','y','z','Shear','Stretch','Stagger','Buckle','Prop-Tw','Opening','Shift', 'Slide', 'Rise', 'Tilt', 'Roll', 'Twist','Pairing', 'chi_1', 'alpha_1', 'beta_1', 'gamma_1', 'delta_1','epsilon_1', 'zeta_1', 'e-z_1', 'chi_2', 'alpha_2','beta_2', 'gamma_2', 'delta_2', 'epsilon_2', 'zeta_2', 'e-z_2',  'v0_1', 'v1_1', 'v2_1', 'v3_1', 'v4_1', 'tm_1', 'P_1', 'ssZp_1', 'Dp_1', 'v0_2', 'v1_2', 'v2_2', 'v3_2', 'v4_2','tm_2', 'P_2', 'ssZp_2', 'Dp_2'].agg('std').reset_index()
-        self.df_min=self.df_series.groupby(['BPnum','BPnum_dyad','segid','resid'])['x','y','z','Shear','Stretch','Stagger','Buckle','Prop-Tw','Opening','Shift', 'Slide', 'Rise', 'Tilt', 'Roll', 'Twist','Pairing', 'chi_1', 'alpha_1', 'beta_1', 'gamma_1', 'delta_1','epsilon_1', 'zeta_1', 'e-z_1', 'chi_2', 'alpha_2','beta_2', 'gamma_2', 'delta_2', 'epsilon_2', 'zeta_2', 'e-z_2',  'v0_1', 'v1_1', 'v2_1', 'v3_1', 'v4_1', 'tm_1', 'P_1', 'ssZp_1', 'Dp_1', 'v0_2', 'v1_2', 'v2_2', 'v3_2', 'v4_2','tm_2', 'P_2', 'ssZp_2', 'Dp_2'].agg('min').reset_index()
-        self.df_max=self.df_series.groupby(['BPnum','BPnum_dyad','segid','resid'])['x','y','z','Shear','Stretch','Stagger','Buckle','Prop-Tw','Opening','Shift', 'Slide', 'Rise', 'Tilt', 'Roll', 'Twist','Pairing', 'chi_1', 'alpha_1', 'beta_1', 'gamma_1', 'delta_1','epsilon_1', 'zeta_1', 'e-z_1', 'chi_2', 'alpha_2','beta_2', 'gamma_2', 'delta_2', 'epsilon_2', 'zeta_2', 'e-z_2',  'v0_1', 'v1_1', 'v2_1', 'v3_1', 'v4_1', 'tm_1', 'P_1', 'ssZp_1', 'Dp_1', 'v0_2', 'v1_2', 'v2_2', 'v3_2', 'v4_2','tm_2', 'P_2', 'ssZp_2', 'Dp_2'].agg('max').reset_index()
+        # old version does not work
+        #self.df=self.df_series.groupby(['BPnum','BPnum_dyad','segid','resid'])['x','y','z','Shear','Stretch','Stagger','Buckle','Prop-Tw','Opening','Shift', 'Slide', 'Rise', 'Tilt', 'Roll', 'Twist','Pairing', 'chi_1', 'alpha_1', 'beta_1', 'gamma_1', 'delta_1','epsilon_1', 'zeta_1', 'e-z_1', 'chi_2', 'alpha_2','beta_2', 'gamma_2', 'delta_2', 'epsilon_2', 'zeta_2', 'e-z_2',  'v0_1', 'v1_1', 'v2_1', 'v3_1', 'v4_1', 'tm_1', 'P_1', 'ssZp_1', 'Dp_1', 'v0_2', 'v1_2', 'v2_2', 'v3_2', 'v4_2','tm_2', 'P_2', 'ssZp_2', 'Dp_2'].apply(np.mean).reset_index()
+        #self.df=self.df_series.groupby(['BPnum','BPnum_dyad','segid','resid']).apply(np.mean).drop(['BPnum','BPnum_dyad','segid','resid'],level=4).unstack().reset_index()
+        self.df=self.df_series.groupby(['BPnum','BPnum_dyad','segid','resid']).agg('mean').drop(columns=['Frame']).reset_index()
+        
+        # refactor
+        #self.df_std=self.df_series.groupby(['BPnum','BPnum_dyad','segid','resid'])['x','y','z','Shear','Stretch','Stagger','Buckle','Prop-Tw','Opening','Shift', 'Slide', 'Rise', 'Tilt', 'Roll', 'Twist','Pairing', 'chi_1', 'alpha_1', 'beta_1', 'gamma_1', 'delta_1','epsilon_1', 'zeta_1', 'e-z_1', 'chi_2', 'alpha_2','beta_2', 'gamma_2', 'delta_2', 'epsilon_2', 'zeta_2', 'e-z_2',  'v0_1', 'v1_1', 'v2_1', 'v3_1', 'v4_1', 'tm_1', 'P_1', 'ssZp_1', 'Dp_1', 'v0_2', 'v1_2', 'v2_2', 'v3_2', 'v4_2','tm_2', 'P_2', 'ssZp_2', 'Dp_2'].agg('std').reset_index()
+        self.df_std=self.df_series.groupby(['BPnum','BPnum_dyad','segid','resid']).agg('std').drop(columns=['Frame']).reset_index()
+        
+        #self.df_min=self.df_series.groupby(['BPnum','BPnum_dyad','segid','resid'])['x','y','z','Shear','Stretch','Stagger','Buckle','Prop-Tw','Opening','Shift', 'Slide', 'Rise', 'Tilt', 'Roll', 'Twist','Pairing', 'chi_1', 'alpha_1', 'beta_1', 'gamma_1', 'delta_1','epsilon_1', 'zeta_1', 'e-z_1', 'chi_2', 'alpha_2','beta_2', 'gamma_2', 'delta_2', 'epsilon_2', 'zeta_2', 'e-z_2',  'v0_1', 'v1_1', 'v2_1', 'v3_1', 'v4_1', 'tm_1', 'P_1', 'ssZp_1', 'Dp_1', 'v0_2', 'v1_2', 'v2_2', 'v3_2', 'v4_2','tm_2', 'P_2', 'ssZp_2', 'Dp_2'].agg('min').reset_index()
+        self.df_min=self.df_series.groupby(['BPnum','BPnum_dyad','segid','resid']).agg('min').drop(columns=['Frame']).reset_index()
+        
+        #self.df_max=self.df_series.groupby(['BPnum','BPnum_dyad','segid','resid'])['x','y','z','Shear','Stretch','Stagger','Buckle','Prop-Tw','Opening','Shift', 'Slide', 'Rise', 'Tilt', 'Roll', 'Twist','Pairing', 'chi_1', 'alpha_1', 'beta_1', 'gamma_1', 'delta_1','epsilon_1', 'zeta_1', 'e-z_1', 'chi_2', 'alpha_2','beta_2', 'gamma_2', 'delta_2', 'epsilon_2', 'zeta_2', 'e-z_2',  'v0_1', 'v1_1', 'v2_1', 'v3_1', 'v4_1', 'tm_1', 'P_1', 'ssZp_1', 'Dp_1', 'v0_2', 'v1_2', 'v2_2', 'v3_2', 'v4_2','tm_2', 'P_2', 'ssZp_2', 'Dp_2'].agg('max').reset_index()
+        self.df_max=self.df_series.groupby(['BPnum','BPnum_dyad','segid','resid']).agg('max').drop(columns=['Frame']).reset_index()
        
         #for what ever reason .apply(lambda x: np.std(x.to_numpy(),ddof=1)).reset_index()  does not work(!)
         #Let's group x y z as coord array for compatibility

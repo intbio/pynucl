@@ -79,6 +79,13 @@ def seq_from_mda(u, segid):
     r=u.select_atoms('segid %s and (nucleic or protein)'%segid).residues.resnames
     return ''.join(list(map(lambda x: residues_3to1[x], r)))
 
+def resnum_from_mda(u, segid):
+    """
+    Function will get a protein or nucleic sequence from an MDanalysis universe object given a segid.
+    """
+    r=u.select_atoms('segid %s and (nucleic or protein)'%segid).residues.resnums
+    return list(r)
+
 def seqrec_from_pdb(pdbid,segid):
     """
     get a SEQREC record for a given PDB and chain

@@ -105,12 +105,14 @@ class nuclstr:
         # self.seqs={'A':{'seqstr':'AFSDER...'}}
         selection=self.u.select_atoms(f'(protein or nucleic) and (not resname {" ".join(IonNames)})')
         for k in self.components.keys():
-            if(self.components[k]['entity'] in ['histone','DNA']):
+            if(self.components[k]['entity'] in ['histone','DNA','other_protein']):
                 segment=selection.select_atoms(f'segid {k}')
                 segment=segment[(segment.altLocs=='') | (segment.altLocs=='A')]
                 strseq=seq_from_mda(segment,k)
                 resids=segment.residues.resids
+                resnums=resnum_from_mda(segment,k)
                 self.seqs[k]['strseq']=strseq[0]+''.join(['X'*(diff-1) + strseq[i+1] for i,diff in enumerate(np.diff(resids))])
+                self.seqs[k]['resnums']=resnums
 
         ##Step 2.2. get fullsequences
         if (fullseqs is None): #inherit strseqs
@@ -154,11 +156,11 @@ class nuclstr:
         #        self.seq_features[k]=ncbi_features()        
         
         # last check: need to detect sides and NLPs (nucleosome like particles)
-        if detect_entities:
+        if auto_detect_entities:
             # this element dict is not valid later as all histones in it are on side 1
             elements_dict=create_elem_dict(self.components,self.seqs,self.seq_features)
             self.components=check_nucleosomes_sides(self.components,elements_dict,self.u,self.seq_features)
-    
+        
     
     
         ##Step 2.6. Get shading features for use in pytexshade (fullsequence)
@@ -206,7 +208,9 @@ class nuclstr:
         #These are adjusted internally to switch from
         self.nucl_elements=create_elem_dict(self.components,self.seqs,self.seq_features)
         
-        if(aln_sel is None):
+        if((aln_sel is None) and auto_detect_entities):
+            self.alignment_sel=nucl_sel_expand('(alpha1 or alpha2 or alpha3) and name CA and nlp_0',self.nucl_elements)
+        elif((aln_sel is None) and (not auto_detect_entities)):
             self.alignment_sel=nucl_sel_expand('(alpha1 or alpha2 or alpha3) and name CA',self.nucl_elements)
         else:
             self.alignment_sel=nucl_sel_expand(aln_sel,self.nucl_elements)
@@ -246,7 +250,7 @@ class nuclstr:
                     refnuc.trajectory[0]
                     self.alignment_sel_dict=self.alignment_sel
                 alignment = align.AlignTraj(self.u, refnuc, select=self.alignment_sel_dict, in_memory=True,start=time[0],stop=time[1],step=time[2])
-                alignment.run()      
+                alignment.run() 
                 
                 ############
                 #Step 6. Identification of 3D mapping and components of DNA by structrual alignment - DNA dyad, etc. Also, set base pairing here
@@ -257,7 +261,7 @@ class nuclstr:
                 # словарь маэпинга на 1kx5 map_ref2obj_dna3d={(segid,resid):(segid,resid)}
                    
                 #Let's identify dyad
-                #Sine nucleosome is aligned to NRF, dyad is at x~0, y>0
+                #Since nucleosome is aligned to NRF, dyad is at x~0, y>0
                 # self.dyad_top=('I',0) #resid of dyad on top DNA strand
                 # self.dyad_bot=('J',0) #resid of dyad on bottom DNA strand
                 ##################################################################
@@ -272,7 +276,7 @@ class nuclstr:
                             near_dyad_sel=self.u.select_atoms('segid %s and name C1\' and (prop abs x <= 15.0) and (prop y <= 55.0) and (prop y >= 25.0) and (prop abs z <= 15.0)'%k)
                             if len(near_dyad_sel)==0:
                                 self.components[k]['type']=='DNAother'
-                                logger.warning('Outlier DNAtop chain {k} found, dropping')
+                                logger.warning(f'Outlier DNAtop chain {k} found, dropping')
                             else:
                                 s=self.u.select_atoms('segid %s and name C1\''%k)
                                 #changed score formula to add a lot if atom is far from dyad x<15 25<y<55 z<15
@@ -295,7 +299,7 @@ class nuclstr:
                             near_dyad_sel=self.u.select_atoms('segid %s and name C1\' and (prop abs x <= 15.0) and (prop y <= 55.0) and (prop y >= 25.0) and (prop abs z <= 15.0)'%k)
                             if len(near_dyad_sel)==0:
                                 self.components[k]['type']=='DNAother'
-                                logger.warning('Outlier DNAbot chain {k} found, dropping')
+                                logger.warning(f'Outlier DNAbot chain {k} found, dropping')
                             else:
                                 s=self.u.select_atoms('segid %s and name C1\''%k)
                                 score= np.abs(s.positions[:,0])  + \
@@ -344,6 +348,7 @@ class nuclstr:
 
                         shift=shifts[scores.index(max(scores))]
                         return((dyad_bot[0],dyad_bot[1]+shift))
+                    #print(self.dyad_top,self.dyad_bot)
                     new_bot=fix_bot_dyad(self.dyad_top,self.dyad_bot,self.u)
                     self.dyad_bot= self.dyad_bot if new_bot is None else new_bot
                     

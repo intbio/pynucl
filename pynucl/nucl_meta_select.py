@@ -74,7 +74,7 @@ def create_elem_dict(components,seqs,seq_features):
     nucl_elements['sugars']='nucleic and (name O4\' C1\' C2\' C3\' C4\' C5\')'
     nucl_elements['phosphates']='nucleic and (name O5\' O3\' P OP1 OP2 O1P O2P)'
     nucl_elements['min_groove']='nucleic and ((resname DC and name C2 N3 O2) or (resname DG and name N2 C2 N3 C4) or (resname DA and name  C2 N3 C4) or (resname DT and name O2 C2 N3))'
-    nucl_elements['maj_groove']='nucleic and ((resname DC and name C6 C5 C4 N4) or (resname DG and name O6 C6 C5 N7 C8) or (resname DA and name  N6 C5 N7) or (resname DT and name C6 C5 C7 C5M O4 C4))'
+    nucl_elements['cont']='nucleic and ((resname DC and name C6 C5 C4 N4) or (resname DG and name O6 C6 C5 N7 C8) or (resname DA and name  N6 C5 N7) or (resname DT and name C6 C5 C7 C5M O4 C4))'
 
 
     for k,v in components.items():

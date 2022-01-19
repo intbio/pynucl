@@ -129,17 +129,19 @@ def detect_entities(struct=None,fullseqs=None,blast_evalue=100,blast_positive_ra
             segid_dict['side']=1
         else:
             segid_dict['side']=0
+        
+        
     entity_dict=check_dna_top_and_bottom_strands(entity_dict)
     return(entity_dict)
 
 import itertools
 from Bio import pairwise2
-import itertools
-from Bio import pairwise2
+
 def check_dna_top_and_bottom_strands(entity_dict):
     def get_chains_complementarity(seq1,seq2):
         alignments = pairwise2.align.globalxx(Seq(str(seq1)),Seq(str(seq2)).reverse_complement(),penalize_end_gaps=False)
-        return(2*alignments[0][-1]/(len(seq1)+len(seq2)))
+        # fixed 20.02.2021 from return(2*alignments[0][-1]/(len(seq1)+len(seq2)))
+        return(2*alignments[0][2]/(len(seq1)+len(seq2)))
     
     dna_chain_list=[key for key,item in entity_dict.items() if item['entity']=='DNA']
     if len(dna_chain_list)!=0:
@@ -147,6 +149,7 @@ def check_dna_top_and_bottom_strands(entity_dict):
         #check that there is only singular top and bottom strand
         top_strands=[entity_dict[segid]['type']=='DNAtop' for segid in dna_chain_list]
         bot_strands=[entity_dict[segid]['type']=='DNAbot' for segid in dna_chain_list]
+        # sometimes there are more than 2!!!
         if (sum(top_strands)+sum(bot_strands))==2:
             if (sum(top_strands)==1) and (sum(bot_strands)==1):
                 top_strands.index(True)
@@ -192,6 +195,7 @@ def check_dna_top_and_bottom_strands(entity_dict):
             score=[]
             for segid1,segid2 in dna_chain_combinations:
                 score.append(get_chains_complementarity(entity_dict[segid1]['sequence'],entity_dict[segid2]['sequence']))
+            #print(dna_chain_combinations,score)
             if max(score)>0.85:
                 top_segid,bot_segid=dna_chain_combinations[score.index(max(score))]
                 logger.warning(f'Chains {top_segid} and {bot_segid} are complementary assigning top and bot by chain name')
@@ -209,7 +213,6 @@ def check_dna_top_and_bottom_strands(entity_dict):
     # TODO check that the sewuence detected is the same )
     return (entity_dict)
     
-    
 
 import numpy as np
 import pandas as pd
@@ -218,6 +221,7 @@ import seaborn as sns
 from itertools import combinations,product,chain
 from pymolint import mol_int
 import copy
+
 def check_nucleosomes_sides(entity_dict,elements_dict,struct,seq_features,pdbid=None):
     components=entity_dict
     u=struct
@@ -379,11 +383,52 @@ def check_nucleosomes_sides(entity_dict,elements_dict,struct,seq_features,pdbid=
             elif len(indict['H2A_H2B'])==1:
                 indict['type']='H2A_H2B_dimer'
         nlp_dict[i]=indict
-    nlp_dict   
+
 
     # (component['entity']=='DNA') and (component['type']=='DNAtop' ) order is essential, as there are components without type kwrd
-    top_dna_segid= [segid for segid,component in components.items() if (component['entity']=='DNA') and (component['type']=='DNAtop' )][0]
-    #print(top_dna_segid)
+    top_dna_segids=[segid for segid,component in components.items() if (component['entity']=='DNA') and (component['type']=='DNAtop' )]
+    bot_dna_segids=[segid for segid,component in components.items() if (component['entity']=='DNA') and (component['type']=='DNAbot' )]
+
+    if len(top_dna_segids)>1:
+        logger.warning('Multiple TOP strands left, selecting the closest one to H3 loopL2 of the first nucleosome')
+        # lets try to find which one is close to nlp 0 h3
+        nlp0_h3_loopL2_cog=u.select_atoms(nucl_sel_expand(f'segid {" ".join(nlp_dict[0]["H3"])} and name CA and H3 and loopL2',elements_dict)).center_of_geometry()
+        
+        distances=[]
+        for top_dna_segid in top_dna_segids:
+            top_chanin_sel=u.select_atoms(f'segid {top_dna_segid} and name P')
+            top_chanin_sel_pos=top_chanin_sel.positions
+            distances.append(np.linalg.norm(top_chanin_sel_pos-nlp0_h3_loopL2_cog,axis=1).min())
+
+        minima=min(distances)
+        for min_dist, segid in zip(distances,top_dna_segids):
+            if min_dist!=minima:
+                logger.warning(f'Setting {segid} to "DNAother"')
+                entity_dict[segid]['type']='DNAother'
+
+        
+    if len(bot_dna_segids)>1:
+        logger.warning('Multiple BOT strands left, selecting the closest one to H3 loopL2 of the first nucleosome')
+        # lets try to find which one is close to nlp 0 h3
+        nlp0_h3_loopL2_cog=u.select_atoms(nucl_sel_expand(f'segid {" ".join(nlp_dict[0]["H3"])} and name CA and H3 and loopL2',elements_dict)).center_of_geometry()
+        
+        distances=[]
+        for bot_dna_segid in bot_dna_segids:
+            bot_chanin_sel=u.select_atoms(f'segid {bot_dna_segid} and name P')
+            bot_chanin_sel_pos=bot_chanin_sel.positions
+            distances.append(np.linalg.norm(bot_chanin_sel_pos-nlp0_h3_loopL2_cog,axis=1).min())
+        
+        minima=min(distances)
+        for min_dist, segid in zip(distances,bot_dna_segids):
+            if min_dist!=minima:
+                logger.warning(f'Setting {segid} to "DNAother"')
+                entity_dict[segid]['type']='DNAother'
+    top_dna_segids=[segid for segid,component in components.items() if (component['entity']=='DNA') and (component['type']=='DNAtop' )]    
+    if len(top_dna_segids)==1:
+        top_dna_segid=top_dna_segids[0]    
+    else:
+        raise ValueError('Multiple top strands are not allowed')
+        
     for nlpid,nlp in nlp_dict.items():
         nlp['sideids']=[]
         for sideid,side_sigids in enumerate(nlp['sides'],1):
