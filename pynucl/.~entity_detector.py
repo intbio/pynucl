@@ -506,7 +506,7 @@ def detect_entities_independent(struct=None,fullseqs=None,blast_evalue=100,blast
                     seqs[k]['fullseq']=fullseqs[k]
 
 
-        for k in components.keys():
+        for k in self.components.keys():
             if(components[k]['entity']=='histone'):
                 seqs[k]['overhangL']=get_overhangL(seqs[k]['fullseq'],seqs[k]['strseq'])
                 seqs[k]['overhangR']=get_overhangR(seqs[k]['fullseq'],seqs[k]['strseq'])
