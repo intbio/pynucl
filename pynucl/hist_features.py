@@ -149,7 +149,7 @@ def hist_features(seq,hist_type=None):
     for k,v in ss_templ_dict[hist_type]['elem'].items():
         start,stop=maploc(aln,v[0],v[1])
         if start>=0 and stop>=0:
-            feat.append(SeqFeature(FeatureLocation(start,stop+1), type=ftypes_dict.get(k,'misc'),id=k,qualifiers={"Name":k,"Color":color_type_dict[type]}))
+            feat.append(SeqFeature(FeatureLocation(start,stop+1), type=ftypes_dict.get(k,'misc'),id=k,qualifiers={"Name":k,"Color":color_type_dict[ftypes_dict.get(k,'misc')]}))
             #qualifiers are acrually needed to be exported to GFF and to be rendered by BIOJS MSA (see HistoneDB)
     return feat
     
