@@ -141,6 +141,7 @@ def hist_features(seq,hist_type=None):
     """
     should return a list of secondary structure elements like ss_templ_* dicts but for a specific sequence, by aligning it to the template (specified by type or idendified by ident_hist)
     """
+    color_type_dict={"helix":"#F77","sheet":"#1B3","loop":"#FF4","misc":"#DDD","frameblock":"#FA3"}
     hist_type,aln=hist_ident(seq)
     if hist_type=='undef':
         return []
@@ -148,7 +149,8 @@ def hist_features(seq,hist_type=None):
     for k,v in ss_templ_dict[hist_type]['elem'].items():
         start,stop=maploc(aln,v[0],v[1])
         if start>=0 and stop>=0:
-            feat.append(SeqFeature(FeatureLocation(start,stop+1), type=ftypes_dict.get(k,'misc'),id=k))
+            feat.append(SeqFeature(FeatureLocation(start,stop+1), type=ftypes_dict.get(k,'misc'),id=k,qualifiers={"Name":k,"Color":color_type_dict[type]}))
+            #qualifiers are acrually needed to be exported to GFF and to be rendered by BIOJS MSA (see HistoneDB)
     return feat
     
 
